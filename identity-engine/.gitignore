@@ -1,2 +1,3 @@
-../base-onchain-identity/
 .env
+node_modules/
+dist/
