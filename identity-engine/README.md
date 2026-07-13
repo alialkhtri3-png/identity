@@ -251,7 +251,18 @@ localhost:3001
 "Reputation Engine"
 ]
 }
+## Verified Live Demo
 
+Status: 🟢 Online
+
+Wallet Verification:
+✅ Passed
+
+DID Generation:
+✅ Passed
+
+Reputation Engine:
+✅ Active
 
 
 ## Architecture
@@ -273,3 +284,89 @@ Web3 Identity Systems Builder
 git add README.md
 git commit -m "Create Identity Engine presentation"
 git push
+# 🔐 Live Identity Engine Demo
+
+## API Status
+
+🟢 Online
+
+Live Endpoint:
+
+https://regime-handmade-reveals-lake.trycloudflare.com/
+
+
+## Identity Verification Flow
+
+Wallet
+↓
+Signature Request
+↓
+Signature Verification
+↓
+DID Generation
+↓
+Wallet Analysis
+↓
+Reputation Score
+
+
+## Verified Test Result
+
+Example Wallet:
+
+0x8eDC55D94cb1Ad95A7A35B0fF66aE77612A07E64
+
+
+Verification:
+
+✅ Signature Valid
+
+DID:
+
+did:web:alialkhtri3-png.github.io:base-onchain-identity
+
+
+Network:
+
+Base (eip155:8453)
+
+
+Reputation:
+
+Role:
+New Wallet
+
+Sybil Score:
+30
+
+
+## API Endpoints
+
+### Health Check
+
+GET /
+
+Returns:
+
+- Engine status
+- Version
+- Available modules
+
+
+### Identity Verification
+
+POST /identity
+
+Input:
+
+- wallet address
+- message
+- signature
+
+
+Output:
+
+- verified identity
+- DID document
+- wallet profile
+- reputation score
