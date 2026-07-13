@@ -258,7 +258,15 @@ localhost:3001
 
 ![Identity Engine Architecture](assets/identity-engine-architecture.svg)
 
+## Live Demo
 
+API:
+https://attorney-hoping-struggle-reno.trycloudflare.com/
+
+Example:
+
+GET /
+POST /identity
 Ali Alkhtri
 
 Web3 Identity Systems Builder
