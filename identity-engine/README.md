@@ -254,7 +254,9 @@ localhost:3001
 
 
 
+## Architecture
 
+![Identity Engine Architecture](assets/identity-engine-architecture.svg)
 
 
 Ali Alkhtri
