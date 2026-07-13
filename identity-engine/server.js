@@ -1,4 +1,6 @@
+import "dotenv/config";
 import express from "express";
+import cors from "cors";
 
 import {
   verifyWalletSignature
@@ -19,6 +21,10 @@ import {
 
 const app = express();
 
+app.use(cors({
+  origin:"*"
+}));
+
 app.use(express.json());
 
 
@@ -26,106 +32,73 @@ app.use(express.json());
 app.get("/", (req,res)=>{
 
   res.json({
-
     name:"Identity Engine",
-
     version:"v1.0",
-
     status:"online",
-
-    description:
-    "Web3 Wallet Intelligence & Reputation Protocol",
-
+    description:"Web3 Wallet Intelligence & Reputation Protocol",
     modules:[
-
       "Signature Verification",
-
       "Wallet Analyzer",
-
       "Reputation Engine",
-
       "DID Builder"
-
     ]
-
   });
 
 });
 
 
-// Identity Endpoint
+// Identity Verification
 app.post("/identity", async(req,res)=>{
 
 try {
 
-
 const {
-address,
-message,
-signature
+ address,
+ message,
+ signature
 }=req.body;
 
 
-// Verify ownership
-
 const verified =
 verifyWalletSignature(
-address,
-message,
-signature
+ address,
+ message,
+ signature
 );
 
 
 if(!verified){
 
-return res.status(401)
-.json({
-
-error:"Invalid wallet signature"
-
+return res.status(401).json({
+ error:"Invalid wallet signature"
 });
 
 }
 
 
-// Analyze wallet
-
 const wallet =
 await analyzeWallet(address);
 
-
-// Reputation
 
 const reputation =
 calculateScore(wallet);
 
 
-// DID
-
 const did =
 createDID(address);
-
 
 
 res.json({
 
 verified:true,
 
-
 identity:{
-
-wallet:address,
-
-did
-
+ wallet:address,
+ did
 },
 
-
 wallet,
-
-
 reputation
-
 
 });
 
@@ -133,20 +106,15 @@ reputation
 }catch(error){
 
 res.status(500).json({
-
 error:error.message
-
 });
 
 }
 
-
 });
 
 
-
-// Start Server
-
+// Start
 app.listen(3001,()=>{
 
 console.log(

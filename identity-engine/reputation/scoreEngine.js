@@ -1,29 +1,64 @@
-export function calculateScore(data){
+export function calculateScore(wallet){
 
- let score = 0;
-
- if(data.transactions > 100)
-   score += 50;
-
- if(data.transactions > 500)
-   score += 30;
+  let activityScore = 0;
+  let sybilScore = 50;
+  let role = "New Wallet";
 
 
- let role = "New Wallet";
+  if(wallet.transactions > 100){
+    activityScore += 40;
+    sybilScore -= 20;
+  }
+  else if(wallet.transactions > 10){
+    activityScore += 20;
+    sybilScore -= 10;
+  }
+  else if(wallet.transactions === 0){
+    sybilScore += 20;
+  }
 
- if(score > 70)
-   role = "Active User";
+
+  const balance = Number(wallet.balance || 0);
 
 
- return {
+  if(balance > 1){
+    activityScore += 20;
+    sybilScore -= 10;
+  }
+  else if(balance > 0){
+    activityScore += 10;
+  }
 
-   activityScore: score,
 
-   sybilScore:
-      score > 50 ? 5 : 30,
+  if(wallet.firstActivity){
+    activityScore += 20;
+    sybilScore -= 10;
+  }
 
-   role
 
- };
+  if(sybilScore < 0)
+    sybilScore = 0;
+
+
+  if(activityScore > 100)
+    activityScore = 100;
+
+
+  if(activityScore >= 70 && sybilScore < 20){
+    role = "Trusted User";
+  }
+  else if(activityScore >= 30){
+    role = "Active User";
+  }
+  else{
+    role = "New Wallet";
+  }
+
+
+  return {
+    activityScore,
+    sybilScore,
+    role
+  };
 
 }
