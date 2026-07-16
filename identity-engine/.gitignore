@@ -1,6 +1,21 @@
+# Dependencies
 node_modules/
+
+# Environment
 .env
+.npmrc
+
+# Logs
 *.log
-profiles/
-identity-report.json
-wallets.json
+
+# Dashboard
+../identity-dashboard/
+
+# Tests
+test/
+testRealIdentity.js
+
+# Local services
+mailer.js
+monitor.js
+MigrationProvider
