@@ -3,6 +3,7 @@ import cors from "cors";
 
 import { gateway } from "./saas/gateway.js";
 import { usageMiddleware } from "./saas/usageMiddleware.js";
+import { adminRoutes } from "./saas/enterprise/adminRoutes.js";
 
 
 const app = express();
@@ -11,22 +12,28 @@ const PORT = 3001;
 
 
 app.use(cors());
+
 app.use(express.json());
 
 
-// SaaS Security Layer
+// SaaS Layer
 app.use("/api/v1", gateway);
-app.use("/api/v1", usageMiddleware);
+
+app.use(usageMiddleware);
 
 
-// Health Check
+// Enterprise Layer
+app.use("/api/admin", adminRoutes);
+
+
+// Health
 app.get("/", (req,res)=>{
 
     res.json({
 
         name:"Sovereign Identity Engine",
 
-        version:"V8.1 SaaS",
+        version:"V8.2 Enterprise",
 
         status:"running",
 
@@ -44,7 +51,7 @@ app.get("/api/v1/status",(req,res)=>{
 
         SaaS:"active",
 
-        version:"V8.1",
+        version:"V8.2",
 
         tenant:req.tenant || null,
 
@@ -57,24 +64,10 @@ app.get("/api/v1/status",(req,res)=>{
 });
 
 
-// Error Handler
-app.use((err,req,res,next)=>{
-
-    console.error(err);
-
-    res.status(500).json({
-
-        error:"Internal Server Error"
-
-    });
-
-});
-
-
 app.listen(PORT,()=>{
 
     console.log(
-        `Sovereign Identity Engine V8.1 SaaS running on ${PORT}`
+        `Sovereign Identity Engine V8.2 Enterprise running on ${PORT}`
     );
 
 });
