@@ -1,6 +1,16 @@
 import express from "express";
 
 import {
+    adminAuth
+} from "./adminAuth.js";
+
+
+import {
+    requirePermission
+} from "./rbacMiddleware.js";
+
+
+import {
     createOrganization,
     getOrganizations
 } from "./organizations.js";
@@ -18,50 +28,87 @@ import {
 } from "./auditLogs.js";
 
 
+
 export const adminRoutes = express.Router();
 
 
-// Create Organization
-adminRoutes.post("/organizations",(req,res)=>{
+// Enterprise Authentication
+adminRoutes.use(adminAuth);
 
-    const {name}=req.body;
+
+
+// ===============================
+// Organizations
+// ===============================
+
+
+adminRoutes.post(
+"/organizations",
+requirePermission("ORG_CREATE"),
+(req,res)=>{
+
+
+    const {
+        name
+    } = req.body;
 
 
     const org =
     createOrganization(name);
 
 
+
     addAuditLog(
         org.id,
         "CREATE_ORGANIZATION",
-        "admin"
+        req.user.apiKey
     );
+
 
 
     res.json(org);
 
+
 });
 
 
-// List Organizations
-adminRoutes.get("/organizations",(req,res)=>{
+
+
+adminRoutes.get(
+"/organizations",
+requirePermission("AUDIT_VIEW"),
+(req,res)=>{
+
 
     res.json(
         getOrganizations()
     );
 
+
 });
 
 
-// Add Member
-adminRoutes.post("/members",(req,res)=>{
+
+
+
+// ===============================
+// Members
+// ===============================
+
+
+
+adminRoutes.post(
+"/members",
+requirePermission("MEMBER_ADD"),
+(req,res)=>{
 
 
     const {
         orgId,
         wallet,
         role
-    }=req.body;
+    } = req.body;
+
 
 
     const member =
@@ -72,6 +119,7 @@ adminRoutes.post("/members",(req,res)=>{
     );
 
 
+
     addAuditLog(
         orgId,
         "ADD_MEMBER",
@@ -79,38 +127,55 @@ adminRoutes.post("/members",(req,res)=>{
     );
 
 
+
     res.json(member);
+
 
 });
 
 
-// Organization Members
+
+
+
 adminRoutes.get(
 "/members/:orgId",
+requirePermission("AUDIT_VIEW"),
 (req,res)=>{
 
 
     res.json(
+
         getMembers(
             req.params.orgId
         )
+
     );
 
 
 });
 
 
+
+
+
+
+// ===============================
 // Audit Logs
+// ===============================
+
 
 adminRoutes.get(
 "/audit/:orgId",
+requirePermission("AUDIT_VIEW"),
 (req,res)=>{
 
 
     res.json(
+
         getAuditLogs(
             req.params.orgId
         )
+
     );
 
 
