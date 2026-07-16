@@ -1,1 +1,10 @@
 base-onchain-identity/
+# Local config
+.npmrc
+
+# Dashboard project
+identity-dashboard/
+
+# Generated identity data
+identity-report.json
+wallets.json
