@@ -19,3 +19,10 @@ testRealIdentity.js
 mailer.js
 monitor.js
 MigrationProvider
+# Parent dashboard
+../.npmrc
+../identity-dashboard/
+
+# Local reports
+identity-report.json
+wallets.json
