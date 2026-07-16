@@ -1,65 +1,52 @@
-// SaaS Gateway Middleware V8.1
+import express from "express";
+import { verifyApiKey } from "./apiKeys.js";
 
-const {
-    validateKey
-} = require("./apiKeys");
-
-const {
-    getTenant
-} = require("./tenantManager");
-
-const {
-    recordUsage
-} = require("./usageMeter");
+export const gateway = express.Router();
 
 
-function saasGateway(req,res,next){
+gateway.use((req,res,next)=>{
 
     const key =
     req.headers["x-api-key"];
 
 
     if(!key){
+
         return res.status(401).json({
             error:"Missing API Key"
         });
+
     }
 
 
     const tenant =
-    validateKey(key);
+    verifyApiKey(key);
 
 
     if(!tenant){
+
         return res.status(403).json({
             error:"Invalid API Key"
         });
+
     }
 
 
-    const account =
-    getTenant(tenant);
-
-
-    if(!account){
-        return res.status(404).json({
-            error:"Tenant not found"
-        });
-    }
-
-
-    recordUsage(
-        tenant,
-        "api"
-    );
-
-
-    req.tenant = account;
-
+    req.tenant = tenant;
 
     next();
 
-}
+});
 
 
-module.exports = saasGateway;
+gateway.get("/status",(req,res)=>{
+
+    res.json({
+
+        SaaS:"active",
+
+        tenant:req.tenant
+
+    });
+
+});
