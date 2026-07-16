@@ -3,16 +3,8 @@ import express from "express";
 import cors from "cors";
 
 import {
-  verifyWalletSignature
-} from "./auth/verifySignature.js";
-
-import {
   analyzeWallet
 } from "./analyzer/walletAnalyzer.js";
-
-import {
-  calculateScore
-} from "./reputation/scoreEngine.js";
 
 import {
   createDID
@@ -21,6 +13,7 @@ import {
 
 const app = express();
 
+
 app.use(cors({
   origin:"*"
 }));
@@ -28,97 +21,190 @@ app.use(cors({
 app.use(express.json());
 
 
+
 // Health Check
 app.get("/", (req,res)=>{
 
-  res.json({
-    name:"Identity Engine",
-    version:"v1.0",
-    status:"online",
-    description:"Web3 Wallet Intelligence & Reputation Protocol",
-    modules:[
-      "Signature Verification",
-      "Wallet Analyzer",
-      "Reputation Engine",
-      "DID Builder"
-    ]
-  });
+    res.json({
+
+        name:"Sovereign Identity Engine",
+
+        version:"V6.3",
+
+        status:"online",
+
+        network:"Base",
+
+        modules:[
+
+            "DID",
+
+            "BaseIndexer",
+
+            "ActivityAnalyzer",
+
+            "TokenScanner",
+
+            "GraphBuilder",
+
+            "SybilDetector",
+
+            "ReputationEngine"
+
+        ]
+
+    });
 
 });
 
 
-// Identity Verification
+
+
+// Identity Analysis
 app.post("/identity", async(req,res)=>{
 
-try {
 
-const {
- address,
- message,
- signature
-}=req.body;
+try{
 
 
-const verified =
-verifyWalletSignature(
- address,
- message,
- signature
-);
+    const walletAddress =
+        req.body.wallet ||
+        req.body.address;
 
 
-if(!verified){
 
-return res.status(401).json({
- error:"Invalid wallet signature"
-});
+    if(!walletAddress){
+
+        return res.status(400).json({
+
+            error:"wallet address required"
+
+        });
+
+    }
+
+
+
+    const wallet =
+        await analyzeWallet(walletAddress);
+
+
+
+    const did =
+        createDID(walletAddress);
+
+
+
+    res.json({
+
+        verified:true,
+
+
+        identity:{
+
+            wallet:walletAddress,
+
+            did
+
+        },
+
+
+        wallet
+
+
+    });
+
+
+
+}
+catch(error){
+
+
+    console.error(error);
+
+
+    res.status(500).json({
+
+        error:error.message
+
+    });
+
 
 }
 
 
-const wallet =
-await analyzeWallet(address);
-
-
-const reputation =
-calculateScore(wallet);
-
-
-const did =
-createDID(address);
-
-
-res.json({
-
-verified:true,
-
-identity:{
- wallet:address,
- did
-},
-
-wallet,
-reputation
-
 });
 
 
-}catch(error){
 
-res.status(500).json({
-error:error.message
-});
+
+
+
+// Dashboard API
+app.get("/api/identity/:wallet", async(req,res)=>{
+
+
+try{
+
+
+    const wallet =
+        await analyzeWallet(
+            req.params.wallet
+        );
+
+
+    const did =
+        createDID(
+            req.params.wallet
+        );
+
+
+
+    res.json({
+
+        wallet:req.params.wallet,
+
+        identity:{
+
+            did
+
+        },
+
+        walletData:wallet
+
+
+    });
+
+
+}
+catch(error){
+
+
+    res.status(500).json({
+
+        error:error.message
+
+    });
+
 
 }
 
+
 });
 
 
-// Start
+
+
+
+
 app.listen(3001,()=>{
 
+
 console.log(
-"Identity Engine running on 3001"
+
+"Sovereign Identity Engine V6.3 running on 3001"
+
 );
+
 
 });

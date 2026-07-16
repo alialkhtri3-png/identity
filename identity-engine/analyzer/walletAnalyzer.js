@@ -1,117 +1,188 @@
 import { ethers } from "ethers";
-import axios from "axios";
 
-const provider = new ethers.JsonRpcProvider(
-  "https://mainnet.base.org"
+import { getBaseWalletData } from "./baseIndexer.js";
+import { analyzeActivity } from "./baseActivity.js";
+import { scanTokens } from "./tokenScanner.js";
+import { buildGraph } from "./graphBuilder.js";
+import { detectSybil } from "./sybilDetector.js";
+import { calculateReputation } from "../reputation/reputationEngine.js";
+import { scanTransactions } from "./baseTransactions.js";
+import { calculateWalletAge } from "./walletAge.js";
+import { scanBaseLogs } from "./baseLogScanner.js";
+
+
+export async function analyzeWallet(wallet){
+
+
+    if(!ethers.isAddress(wallet)){
+        throw new Error("Invalid wallet address");
+    }
+const ContractAnalyzer =
+require("./contractAnalyzer");
+const contractAnalyzer =
+new ContractAnalyzer();
+
+
+const contracts =
+contractAnalyzer.analyze(
+activity.transactions
 );
 
-const API_KEY = process.env.ETHERSCAN_API_KEY;
 
-export async function analyzeWallet(address){
-
-  try {
-
-    const checksum = ethers.getAddress(address);
-
-    const balanceWei =
-      await provider.getBalance(checksum);
-
-    const balance =
-      ethers.formatEther(balanceWei);
-
-    const latestBlock =
-      await provider.getBlockNumber();
-
-    let transactions = 0;
-    let firstActivity = null;
-    let lastActivity = null;
+    const base =
+        await getBaseWalletData(wallet);
 
 
-    if(API_KEY){
 
-      const url =
-      `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${checksum}&startblock=0&endblock=99999999&sort=asc&apikey=${API_KEY}`;
-
-
-      const response = await axios.get(url);
+    const activity =
+        await analyzeActivity(wallet);
 
 
-      if(response.data.status === "1"){
 
-        const txs = response.data.result;
-
-        transactions = txs.length;
+    const transactions =
+        await scanTransactions(wallet);
 
 
-        if(txs.length > 0){
 
-          firstActivity =
-          new Date(
-            Number(txs[0].timeStamp) * 1000
-          ).toISOString();
+    const logs =
+        await scanBaseLogs(wallet);
 
 
-          lastActivity =
-          new Date(
-            Number(txs[txs.length-1].timeStamp) * 1000
-          ).toISOString();
+
+    const age =
+        calculateWalletAge(transactions);
+
+
+
+    const tokens =
+        await scanTokens(wallet);
+
+
+
+    const graph =
+        buildGraph({
+            wallet
+        });
+
+
+
+    const finalActivity = {
+
+        ...activity,
+
+        ...transactions,
+
+        ...age,
+
+
+        transfers:
+            logs.transfers,
+
+
+        contractsUsed:
+            logs.contracts.length,
+
+
+        logBlocks:
+            logs.blocksScanned
+
+    };
+
+
+
+    const reputation =
+        calculateReputation({
+
+            activity: finalActivity,
+
+            tokens: tokens.tokens,
+
+            graph
+
+        });
+
+
+
+    const sybil =
+        detectSybil({
+
+            activity: finalActivity,
+
+            tokens: tokens.tokens
+
+        });
+
+
+
+    return {
+
+
+        wallet,
+
+
+        network:"Base",
+
+
+        balance:
+            base.balance,
+
+
+        activity:
+            finalActivity,
+
+
+        tokens:
+            tokens.tokens,
+
+
+        graph,
+
+
+        reputation,
+
+
+        sybil,
+
+
+        chain:{
+
+            chainId:8453,
+
+            latestBlock:
+                base.chain.latestBlock
+
+        },
+
+contracts
+        engine:{
+
+            version:"V6.5",
+
+            modules:[
+
+                "BaseIndexer",
+
+                "TransactionScanner",
+
+                "BaseLogScanner",
+
+                "WalletAge",
+
+                "ActivityAnalyzer",
+
+                "TokenScanner",
+
+                "GraphBuilder",
+
+                "SybilDetector",
+
+                "ReputationEngine"
+
+            ]
 
         }
 
 
-      } else {
-
-        console.log(
-          "Etherscan:",
-          response.data.result
-        );
-
-      }
-
-    }
-
-
-    return {
-
-      wallet: checksum,
-
-      network:"Base",
-
-      balance,
-
-      transactions,
-
-      block:latestBlock,
-
-      chains:[
-        "Base"
-      ],
-
-      firstActivity,
-
-      lastActivity
-
     };
-
-
-  } catch(error){
-
-    return {
-
-      wallet:address,
-
-      network:"Base",
-
-      balance:"0",
-
-      transactions:0,
-
-      chains:[],
-
-      error:error.message
-
-    };
-
-  }
 
 }
