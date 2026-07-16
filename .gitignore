@@ -8,3 +8,4 @@ identity-dashboard/
 # Generated identity data
 identity-report.json
 wallets.json
+identity-engine/saas/api-keys.json
