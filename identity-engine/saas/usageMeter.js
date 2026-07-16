@@ -1,39 +1,33 @@
-// SaaS Usage Meter V8.1
+const usageDB = {};
 
-const usage = {};
+export function trackUsage(tenantId){
 
-function recordUsage(tenantId, action="scan") {
+    if(!usageDB[tenantId]){
 
-    if(!usage[tenantId]){
-        usage[tenantId] = {
-            scans:0,
-            apiCalls:0
+        usageDB[tenantId] = {
+            requests:0,
+            lastRequest:null
         };
+
     }
 
-    if(action === "scan"){
-        usage[tenantId].scans++;
-    }
 
-    if(action === "api"){
-        usage[tenantId].apiCalls++;
-    }
+    usageDB[tenantId].requests++;
 
-    return usage[tenantId];
+    usageDB[tenantId].lastRequest =
+        new Date().toISOString();
+
+
+    return usageDB[tenantId];
+
 }
 
 
-function getUsage(tenantId){
+export function getUsage(tenantId){
 
-    return usage[tenantId] || {
-        scans:0,
-        apiCalls:0
+    return usageDB[tenantId] || {
+        requests:0,
+        lastRequest:null
     };
 
 }
-
-
-module.exports = {
-    recordUsage,
-    getUsage
-};

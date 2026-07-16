@@ -1,25 +1,22 @@
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
-import {
-  analyzeWallet
-} from "./analyzer/walletAnalyzer.js";
-
-import {
-  createDID
-} from "./did/didBuilder.js";
+import { gateway } from "./saas/gateway.js";
+import { usageMiddleware } from "./saas/usageMiddleware.js";
 
 
 const app = express();
 
+const PORT = 3001;
 
-app.use(cors({
-  origin:"*"
-}));
 
+app.use(cors());
 app.use(express.json());
 
+
+// SaaS Security Layer
+app.use("/api/v1", gateway);
+app.use("/api/v1", usageMiddleware);
 
 
 // Health Check
@@ -29,182 +26,55 @@ app.get("/", (req,res)=>{
 
         name:"Sovereign Identity Engine",
 
-        version:"V6.3",
+        version:"V8.1 SaaS",
 
-        status:"online",
+        status:"running",
 
-        network:"Base",
-
-        modules:[
-
-            "DID",
-
-            "BaseIndexer",
-
-            "ActivityAnalyzer",
-
-            "TokenScanner",
-
-            "GraphBuilder",
-
-            "SybilDetector",
-
-            "ReputationEngine"
-
-        ]
+        timestamp:new Date().toISOString()
 
     });
 
 });
 
 
-
-
-// Identity Analysis
-app.post("/identity", async(req,res)=>{
-
-
-try{
-
-
-    const walletAddress =
-        req.body.wallet ||
-        req.body.address;
-
-
-
-    if(!walletAddress){
-
-        return res.status(400).json({
-
-            error:"wallet address required"
-
-        });
-
-    }
-
-
-
-    const wallet =
-        await analyzeWallet(walletAddress);
-
-
-
-    const did =
-        createDID(walletAddress);
-
-
+// SaaS Status
+app.get("/api/v1/status",(req,res)=>{
 
     res.json({
 
-        verified:true,
+        SaaS:"active",
 
+        version:"V8.1",
 
-        identity:{
+        tenant:req.tenant || null,
 
-            wallet:walletAddress,
+        usage:req.usage || null,
 
-            did
-
-        },
-
-
-        wallet
-
+        timestamp:new Date().toISOString()
 
     });
-
-
-
-}
-catch(error){
-
-
-    console.error(error);
-
-
-    res.status(500).json({
-
-        error:error.message
-
-    });
-
-
-}
-
 
 });
 
 
+// Error Handler
+app.use((err,req,res,next)=>{
 
-
-
-
-// Dashboard API
-app.get("/api/identity/:wallet", async(req,res)=>{
-
-
-try{
-
-
-    const wallet =
-        await analyzeWallet(
-            req.params.wallet
-        );
-
-
-    const did =
-        createDID(
-            req.params.wallet
-        );
-
-
-
-    res.json({
-
-        wallet:req.params.wallet,
-
-        identity:{
-
-            did
-
-        },
-
-        walletData:wallet
-
-
-    });
-
-
-}
-catch(error){
-
+    console.error(err);
 
     res.status(500).json({
 
-        error:error.message
+        error:"Internal Server Error"
 
     });
-
-
-}
-
 
 });
 
 
+app.listen(PORT,()=>{
 
-
-
-
-app.listen(3001,()=>{
-
-
-console.log(
-
-"Sovereign Identity Engine V6.3 running on 3001"
-
-);
-
+    console.log(
+        `Sovereign Identity Engine V8.1 SaaS running on ${PORT}`
+    );
 
 });

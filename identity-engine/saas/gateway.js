@@ -6,8 +6,8 @@ export const gateway = express.Router();
 
 gateway.use((req,res,next)=>{
 
-    const key =
-    req.headers["x-api-key"];
+
+    const key = req.headers["x-api-key"];
 
 
     if(!key){
@@ -19,8 +19,7 @@ gateway.use((req,res,next)=>{
     }
 
 
-    const tenant =
-    verifyApiKey(key);
+    const tenant = verifyApiKey(key);
 
 
     if(!tenant){
@@ -35,18 +34,5 @@ gateway.use((req,res,next)=>{
     req.tenant = tenant;
 
     next();
-
-});
-
-
-gateway.get("/status",(req,res)=>{
-
-    res.json({
-
-        SaaS:"active",
-
-        tenant:req.tenant
-
-    });
 
 });
