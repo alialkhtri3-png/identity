@@ -1,26 +1,15 @@
 import { trackUsage } from "./usageMeter.js";
 
-
 export function usageMiddleware(req,res,next){
 
-
+    // إذا لم يوجد Tenant فلا توقف الطلب
     if(!req.tenant){
-
-        return res.status(401).json({
-            error:"Tenant required"
-        });
-
+        return next();
     }
 
-
-    const usage =
-        trackUsage(
-            req.tenant.tenantId
-        );
-
-
-    req.usage = usage;
-
+    req.usage = trackUsage(
+        req.tenant.tenantId
+    );
 
     next();
 

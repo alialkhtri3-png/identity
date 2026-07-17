@@ -1,26 +1,25 @@
+import {
+createSubscription,
+getSubscriptions
+} from "./billing/subscriptions.js";
+
+
+import {
+createInvoice,
+getInvoices
+} from "./billing/invoices.js";
+
 import express from "express";
-
-import {
-    adminAuth
-} from "./adminAuth.js";
-
-
-import {
-    requirePermission
-} from "./rbacMiddleware.js";
-
 
 import {
     createOrganization,
     getOrganizations
 } from "./organizations.js";
 
-
 import {
     addMember,
     getMembers
 } from "./members.js";
-
 
 import {
     addAuditLog,
@@ -28,87 +27,54 @@ import {
 } from "./auditLogs.js";
 
 
-
 export const adminRoutes = express.Router();
 
 
-// Enterprise Authentication
-adminRoutes.use(adminAuth);
+// Create Organization
+adminRoutes.post("/organizations",(req,res)=>{
 
-
-
-// ===============================
-// Organizations
-// ===============================
-
-
-adminRoutes.post(
-"/organizations",
-requirePermission("ORG_CREATE"),
-(req,res)=>{
-
-
-    const {
-        name
-    } = req.body;
-
+    const {name}=req.body;
 
     const org =
-    createOrganization(name);
-
+    createOrganization(
+    name,
+    req.tenant.tenantId
+);
 
 
     addAuditLog(
         org.id,
         "CREATE_ORGANIZATION",
-        req.user.apiKey
+        req.user?.role || "OWNER",
+        req.user?.tenantId
     );
-
 
 
     res.json(org);
 
-
 });
 
 
-
-
-adminRoutes.get(
-"/organizations",
-requirePermission("AUDIT_VIEW"),
-(req,res)=>{
-
+// List Organizations
+adminRoutes.get("/organizations",(req,res)=>{
 
     res.json(
-        getOrganizations()
+        getOrganizations(
+    req.tenant.tenantId
+)
     );
-
 
 });
 
 
-
-
-
-// ===============================
-// Members
-// ===============================
-
-
-
-adminRoutes.post(
-"/members",
-requirePermission("MEMBER_ADD"),
-(req,res)=>{
-
+// Add Member
+adminRoutes.post("/members",(req,res)=>{
 
     const {
         orgId,
         wallet,
         role
     } = req.body;
-
 
 
     const member =
@@ -119,64 +85,94 @@ requirePermission("MEMBER_ADD"),
     );
 
 
-
     addAuditLog(
         orgId,
         "ADD_MEMBER",
-        wallet
+        req.user?.role || "OWNER",
+        req.user?.tenantId
     );
-
 
 
     res.json(member);
 
-
 });
 
 
-
-
-
-adminRoutes.get(
-"/members/:orgId",
-requirePermission("AUDIT_VIEW"),
-(req,res)=>{
-
+// List Members
+adminRoutes.get("/members/:orgId",(req,res)=>{
 
     res.json(
-
         getMembers(
             req.params.orgId
         )
-
     );
 
+});
+adminRoutes.post(
+"/subscriptions",
+(req,res)=>{
+
+const sub =
+createSubscription(
+req.body.orgId,
+req.body.plan
+);
+
+res.json(sub);
 
 });
-
-
-
-
-
-
-// ===============================
-// Audit Logs
-// ===============================
 
 
 adminRoutes.get(
-"/audit/:orgId",
-requirePermission("AUDIT_VIEW"),
+"/subscriptions",
+(req,res)=>{
+
+res.json(
+getSubscriptions()
+);
+
+});
+
+
+
+adminRoutes.post(
+"/invoices",
 (req,res)=>{
 
 
-    res.json(
+const invoice =
+createInvoice(
+req.body.orgId,
+req.body.amount
+);
 
-        getAuditLogs(
-            req.params.orgId
-        )
 
-    );
+res.json(invoice);
+
+});
+
+
+adminRoutes.get(
+"/invoices/:orgId",
+(req,res)=>{
+
+
+res.json(
+getInvoices(req.params.orgId)
+);
 
 
 });
+
+
+// Audit Logs
+adminRoutes.get("/audit/:orgId",(req,res)=>{
+
+    res.json(
+        getAuditLogs(
+            req.params.orgId
+        )
+    );
+
+});
+

@@ -1,11 +1,11 @@
 import { ethers } from "ethers";
 
-
 const provider = new ethers.JsonRpcProvider(
   "https://mainnet.base.org"
 );
 
-
+const TRANSFER_TOPIC =
+  ethers.id("Transfer(address,address,uint256)");
 
 export async function getBaseWalletData(wallet){
 
@@ -13,17 +13,83 @@ export async function getBaseWalletData(wallet){
         throw new Error("Invalid wallet address");
     }
 
-
-    // Balance
     const balance =
         await provider.getBalance(wallet);
 
-
-
-    // Current block
-    const blockNumber =
+    const latestBlock =
         await provider.getBlockNumber();
 
+
+    const padded =
+        ethers.zeroPadValue(wallet,32);
+
+
+    let logs=[];
+
+    try{
+
+        logs = await provider.getLogs({
+
+            fromBlock:
+              Math.max(0, latestBlock - 50000),
+
+            toBlock:
+              latestBlock,
+
+            topics:[
+                TRANSFER_TOPIC,
+                null,
+                padded
+            ]
+
+        });
+
+
+        const logsOut =
+        await provider.getLogs({
+
+            fromBlock:
+              Math.max(0, latestBlock - 50000),
+
+            toBlock:
+              latestBlock,
+
+            topics:[
+                TRANSFER_TOPIC,
+                padded
+            ]
+
+        });
+
+
+        logs = [...logs,...logsOut];
+
+
+    }catch(e){
+
+        console.log(
+          "Indexer scan error:",
+          e.message
+        );
+
+    }
+
+
+    let firstSeen=null;
+    let lastActive=null;
+
+
+    if(logs.length){
+
+        const blocks =
+        logs.map(x=>x.blockNumber)
+            .sort((a,b)=>a-b);
+
+
+        firstSeen=blocks[0];
+        lastActive=blocks[blocks.length-1];
+
+    }
 
 
     return {
@@ -33,20 +99,19 @@ export async function getBaseWalletData(wallet){
         wallet,
 
         balance:{
-            eth: ethers.formatEther(balance)
+            eth:ethers.formatEther(balance)
         },
 
 
         activity:{
 
-            transactions:0,
+            transactions:logs.length,
 
-            firstSeen:null,
+            firstSeen,
 
-            lastActive:null,
+            lastActive,
 
-            note:
-            "Base RPC only - add indexer for history"
+            scannedBlocks:50000
 
         },
 
@@ -56,7 +121,12 @@ export async function getBaseWalletData(wallet){
 
         graph:{
 
-            nodes:[],
+            nodes:[
+              {
+                id:wallet,
+                type:"wallet"
+              }
+            ],
 
             edges:[]
 
@@ -67,7 +137,7 @@ export async function getBaseWalletData(wallet){
 
             chainId:8453,
 
-            latestBlock:blockNumber
+            latestBlock
 
         }
 

@@ -1,60 +1,35 @@
 import { ethers } from "ethers";
 
-
-const provider =
-new ethers.JsonRpcProvider(
-    "https://mainnet.base.org"
+const provider = new ethers.JsonRpcProvider(
+"https://mainnet.base.org"
 );
 
-
-// ERC20 Transfer Event
 const TRANSFER_TOPIC =
-ethers.id(
-    "Transfer(address,address,uint256)"
-);
-
-
+ethers.id("Transfer(address,address,uint256)");
 
 export async function scanBaseLogs(wallet){
 
-
-    if(!ethers.isAddress(wallet)){
-
-        throw new Error(
-            "Invalid wallet address"
-        );
-
-    }
-
-
-
-    const address =
-        wallet.toLowerCase()
-        .replace(
-            "0x",
-            ""
-        );
-
-
-
-    const paddedAddress =
-        "0x" +
-        address.padStart(
-            64,
-            "0"
-        );
-
-
+    if(!ethers.isAddress(wallet))
+        throw new Error("Invalid wallet");
 
     const latestBlock =
         await provider.getBlockNumber();
 
+    const range = 2000;
 
-
-    // آخر 5000 بلوك كبداية
     const fromBlock =
-        latestBlock - 5000;
+        Math.max(
+            0,
+            latestBlock-range
+        );
 
+
+    const padded =
+    "0x" +
+    wallet
+    .toLowerCase()
+    .replace("0x","")
+    .padStart(64,"0");
 
 
     let logs=[];
@@ -62,87 +37,50 @@ export async function scanBaseLogs(wallet){
 
     try{
 
-
         logs =
         await provider.getLogs({
 
             fromBlock,
-
-            toBlock:
-                latestBlock,
-
+            toBlock:latestBlock,
 
             topics:[
-
                 TRANSFER_TOPIC,
-
                 null,
-
-                [
-                    paddedAddress
-                ]
-
+                padded
             ]
 
         });
 
 
-
-    }catch(error){
-
+    }catch(e){
 
         console.log(
-            "Base log scan error:",
-            error.message
+        "SAFE LOG SCAN:",
+        e.message
         );
-
-
-        logs=[];
 
     }
 
 
-
-
     return {
 
-
         wallet,
-
 
         blocksScanned:
         latestBlock-fromBlock,
 
-
         transfers:
         logs.length,
-
 
         contracts:
         [
             ...new Set(
                 logs.map(
-                    x=>x.address
+                    l=>l.address
                 )
             )
-        ],
-
-
-        latestBlock,
-
-
-        rawLogs:logs.map(log=>({
-
-            contract:
-            log.address,
-
-            topics:
-            log.topics
-
-        }))
-
+        ]
 
     };
-
 
 }

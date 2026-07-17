@@ -1,36 +1,23 @@
-export function adminAuth(
-req,
-res,
-next
-){
+export function adminAuth(req,res,next){
 
-
-    const apiKey =
-    req.headers["x-api-key"];
-
-
-
-    if(!apiKey){
+    // يجب أن يكون gateway قد أنشأ req.tenant
+    if(!req.tenant){
 
         return res.status(401).json({
-
-            error:"API Key Required"
-
+            error:"Tenant required"
         });
 
     }
 
+    req.user = {
 
+        tenantId : req.tenant.tenantId,
 
-    req.user={
+        apiKey : req.tenant.apiKey,
 
-        role:"OWNER",
-
-        apiKey
+        role : "OWNER"
 
     };
-
-
 
     next();
 

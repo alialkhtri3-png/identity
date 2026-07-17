@@ -1,3 +1,8 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+echo "🔧 Updating Audit Logs..."
+
+cat > saas/enterprise/auditLogs.js <<'JS'
 import fs from "fs";
 
 const FILE="./saas/enterprise/data/audit.json";
@@ -71,3 +76,36 @@ export function getAuditLogs(orgId){
     );
 
 }
+JS
+
+
+
+echo "🔧 Updating Admin Routes..."
+
+python - <<'PY'
+p="saas/enterprise/adminRoutes.js"
+
+s=open(p).read()
+
+s=s.replace(
+'addAuditLog(\n        org.id,\n        "CREATE_ORGANIZATION",\n        "admin"\n    );',
+'addAuditLog(\n        org.id,\n        "CREATE_ORGANIZATION",\n        "OWNER",\n        req.tenant.tenantId\n    );'
+)
+
+open(p,"w").write(s)
+PY
+
+
+
+echo "✅ Syntax Check"
+
+node --check saas/enterprise/auditLogs.js
+node --check saas/enterprise/adminRoutes.js
+node --check server.js
+
+
+echo "🚀 Restart Server"
+
+pkill node
+
+node server.js

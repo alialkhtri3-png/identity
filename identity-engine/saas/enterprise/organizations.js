@@ -1,30 +1,50 @@
-const organizations = [];
+import fs from "fs";
+
+const FILE="./saas/enterprise/data/organizations.json";
 
 
-export function createOrganization(name){
+function load(){
+    if(!fs.existsSync(FILE)){
+        return [];
+    }
 
-    const org = {
-
-        id:
-        "org-" + Date.now(),
-
-        name,
-
-        createdAt:
-        new Date().toISOString()
-
-    };
-
-
-    organizations.push(org);
-
-    return org;
-
+    return JSON.parse(
+        fs.readFileSync(FILE,"utf8")
+    );
 }
 
 
-export function getOrganizations(){
+function save(data){
+    fs.writeFileSync(
+        FILE,
+        JSON.stringify(data,null,2)
+    );
+}
 
-    return organizations;
+
+export function createOrganization(name, tenant){
+
+    const organizations = load();
+
+    const org={
+        id:"org-"+Date.now(),
+        name,
+        tenantId:tenant,
+        createdAt:new Date().toISOString()
+    };
+
+    organizations.push(org);
+
+    save(organizations);
+
+    return org;
+}
+
+
+export function getOrganizations(tenant){
+
+    return load().filter(
+        o=>o.tenantId===tenant
+    );
 
 }

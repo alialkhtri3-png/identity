@@ -1,187 +1,100 @@
-import { ethers } from "ethers";
-
 import { getBaseWalletData } from "./baseIndexer.js";
-import { analyzeActivity } from "./baseActivity.js";
+import { scanTransactions } from "./transactionScanner.js";
+import { scanBaseLogs } from "./baseLogScanner.js";
 import { scanTokens } from "./tokenScanner.js";
 import { buildGraph } from "./graphBuilder.js";
 import { detectSybil } from "./sybilDetector.js";
-import { calculateReputation } from "../reputation/reputationEngine.js";
-import { scanTransactions } from "./baseTransactions.js";
-import { calculateWalletAge } from "./walletAge.js";
-import { scanBaseLogs } from "./baseLogScanner.js";
-
+import { calculateReputation } from "../calculateReputation.js";
 
 export async function analyzeWallet(wallet){
 
+    const chainId = 8453;
 
-    if(!ethers.isAddress(wallet)){
-        throw new Error("Invalid wallet address");
-    }
-const ContractAnalyzer =
-require("./contractAnalyzer");
-const contractAnalyzer =
-new ContractAnalyzer();
+    const baseData = await getBaseWalletData(wallet);
 
-
-const contracts =
-contractAnalyzer.analyze(
-activity.transactions
-);
-
-
-    const base =
-        await getBaseWalletData(wallet);
-
-
-
-    const activity =
-        await analyzeActivity(wallet);
-
-
-
-    const transactions =
-        await scanTransactions(wallet);
-
-
-
-    const logs =
-        await scanBaseLogs(wallet);
-
-
-
-    const age =
-        calculateWalletAge(transactions);
-
-
-
-    const tokens =
-        await scanTokens(wallet);
-
-
-
-    const graph =
-        buildGraph({
-            wallet
-        });
-
-
-
-    const finalActivity = {
-
-        ...activity,
-
-        ...transactions,
-
-        ...age,
-
-
-        transfers:
-            logs.transfers,
-
-
-        contractsUsed:
-            logs.contracts.length,
-
-
-        logBlocks:
-            logs.blocksScanned
-
+    const activity = {
+        ...await scanTransactions(wallet),
+        transactions:
+            baseData.activity.transactions,
+        firstSeen:
+            baseData.activity.firstSeen,
+        lastActive:
+            baseData.activity.lastActive,
+        baseIndexer:true
     };
 
+    activity.base = baseData;
+
+    const logs = await scanBaseLogs(wallet);
+
+    const tokens = await scanTokens(wallet);
+
+    const graph = buildGraph({
+        wallet,
+        activity
+    });
+
+    const sybil = detectSybil({
+        wallet,
+        graph
+    });
 
 
-    const reputation =
-        calculateReputation({
-
-            activity: finalActivity,
-
-            tokens: tokens.tokens,
-
-            graph
-
-        });
-
-
-
-    const sybil =
-        detectSybil({
-
-            activity: finalActivity,
-
-            tokens: tokens.tokens
-
-        });
-
+    const reputation = calculateReputation({
+        activity,
+        tokens,
+        sybil
+    });
 
 
     return {
 
-
         wallet,
-
 
         network:"Base",
 
-
-        balance:
-            base.balance,
-
-
-        activity:
-            finalActivity,
+        chain:{
+            chainId,
+            latestBlock: activity?.latestBlock || null
+        },
 
 
-        tokens:
-            tokens.tokens,
+        activity,
 
+        tokens,
 
         graph,
 
-
         reputation,
-
 
         sybil,
 
 
-        chain:{
-
-            chainId:8453,
-
-            latestBlock:
-                base.chain.latestBlock
-
-        },
-
-contracts
         engine:{
-
-            version:"V6.5",
+            version:"V8.5.1-TX-INTELLIGENCE",
 
             modules:[
 
                 "BaseIndexer",
-
                 "TransactionScanner",
-
                 "BaseLogScanner",
-
                 "WalletAge",
-
                 "ActivityAnalyzer",
-
                 "TokenScanner",
-
                 "GraphBuilder",
-
                 "SybilDetector",
-
-                "ReputationEngine"
+                "ReputationEngine",
+                "ContractAnalyzer",
+                "SaaSTenantManager",
+                "APIKeyGateway",
+                "UsageMeter",
+                "SubscriptionPlans"
 
             ]
+        },
 
-        }
 
+        timestamp:new Date().toISOString()
 
     };
 

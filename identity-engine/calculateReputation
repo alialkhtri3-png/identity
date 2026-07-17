@@ -1,4 +1,0 @@
-// منطق مقترح لزيادة السمعة بناءً على هذا الـ POAP
-if (hasWarpcastPOAP(wallet)) {
-    reputationScore += 50; 
-}

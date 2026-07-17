@@ -1,121 +1,173 @@
 import { ethers } from "ethers";
 
-const provider = new ethers.JsonRpcProvider(
- "https://mainnet.base.org"
+
+const provider =
+new ethers.JsonRpcProvider(
+"https://mainnet.base.org"
 );
 
-const TRANSFER =
-"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 
 
 export async function scanTransactions(wallet){
 
- wallet = wallet.toLowerCase();
-
- const latest =
- await provider.getBlockNumber();
-
- const start =
- latest - 100000;
+    wallet = wallet.toLowerCase();
 
 
- const step = 5000;
-
- const txs = new Set();
-
-
- const topicWallet =
- ethers.zeroPadValue(
-  wallet,
-  32
- );
+    const latest =
+        await provider.getBlockNumber();
 
 
- for(
-  let from=start;
-  from<latest;
-  from+=step
- ){
-
-  const to =
-  Math.min(
-   from+step-1,
-   latest
-  );
+    const start =
+        latest - 50000;
 
 
-  console.log(
-   `Scanning ${from}-${to}`
-  );
+    let transactions = new Set();
 
+    let contracts = new Set();
 
-  try{
+    let firstSeen = null;
 
-
-   const sent =
-   await provider.getLogs({
-
-    fromBlock:from,
-    toBlock:to,
-
-    topics:[
-     TRANSFER,
-     topicWallet
-    ]
-
-   });
+    let lastActive = null;
 
 
 
-   const received =
-   await provider.getLogs({
-
-    fromBlock:from,
-    toBlock:to,
-
-    topics:[
-     TRANSFER,
-     null,
-     topicWallet
-    ]
-
-   });
+    const step = 2000;
 
 
 
-   [
-    ...sent,
-    ...received
-   ].forEach(log=>{
+    for(
+        let from = start;
+        from < latest;
+        from += step
+    ){
 
-    txs.add(
-     log.transactionHash
-    );
-
-   });
-
-
-  }catch(err){
-
-   console.log(
-    "RPC block range failed",
-    from,
-    to
-   );
-
-  }
-
- }
+        const to =
+            Math.min(
+                from + step - 1,
+                latest
+            );
 
 
- return {
+        try{
 
-  transactions:
-  txs.size,
 
-  scannedBlocks:
-  latest-start
+            for(
+                let block = from;
+                block <= to;
+                block++
+            ){
 
- };
+
+                const data =
+                await provider.getBlock(
+                    block,
+                    true
+                );
+
+
+                if(!data?.transactions)
+                    continue;
+
+
+
+                for(
+                    const tx of data.transactions
+                ){
+
+
+                    const fromAddr =
+                    tx.from?.toLowerCase();
+
+
+                    const toAddr =
+                    tx.to?.toLowerCase();
+
+
+
+                    if(
+                        fromAddr === wallet ||
+                        toAddr === wallet
+                    ){
+
+
+                        transactions.add(
+                            tx.hash
+                        );
+
+
+
+                        if(tx.to){
+
+                            contracts.add(
+                                tx.to
+                            );
+
+                        }
+
+
+
+                        if(!firstSeen)
+                            firstSeen =
+                            tx.hash;
+
+
+
+                        lastActive =
+                            tx.hash;
+
+                    }
+
+                }
+
+            }
+
+
+        }catch(err){
+
+            console.log(
+                "Block scan error",
+                from,
+                err.message
+            );
+
+        }
+
+    }
+
+
+
+    return {
+
+
+        transactions:
+            transactions.size,
+
+
+        contractsUsed:
+            contracts.size,
+
+
+        contracts:
+            [...contracts],
+
+
+        firstSeen,
+
+        lastActive,
+
+
+        scannedBlocks:
+            latest-start,
+
+
+        note:
+        "Native ETH + Contract transaction scanner V8.5.1"
+
+
+    };
 
 }
+
+
+export const scanBaseTransactions =
+scanTransactions;
